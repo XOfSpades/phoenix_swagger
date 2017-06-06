@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Phx.Swagger.Generate do
   use Mix.Task
   require Logger
-  
+
   @recursive true
 
   @shortdoc "Generates swagger.json file based on phoenix router"
@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Phx.Swagger.Generate do
   defp default_endpoint_module_name, do: Module.concat([top_level_namespace(), :Web, :Endpoint])
   defp router_module(switches), do: switches |> Keyword.get(:router, default_router_module_name()) |> attempt_load()
   defp endpoint_module(switches), do: switches |> Keyword.get(:endpoint, default_endpoint_module_name()) |> attempt_load()
-  
+
   def run(args) do
     Mix.Task.run("compile")
     Mix.Task.reenable("phx.swagger.generate")
@@ -40,7 +40,7 @@ defmodule Mix.Tasks.Phx.Swagger.Generate do
       args,
       switches: [router: :string, endpoint: :string, help: :boolean],
       aliases: [r: :router, e: :endpoint, h: :help])
-    
+
     router = router_module(switches)
     endpoint = endpoint_module(switches)
     cond do
@@ -75,7 +75,7 @@ defmodule Mix.Tasks.Phx.Swagger.Generate do
     end
     File.write!(output_file, contents)
   end
-  
+
   defp attempt_load(module_name) do
     case module_name |> List.wrap() |> Module.concat() |> Code.ensure_loaded() do
       {:module, result} -> result
@@ -134,7 +134,7 @@ defmodule Mix.Tasks.Phx.Swagger.Generate do
   defp find_swagger_path_function(route = %{opts: action, path: path}) when is_atom(action) do
     controller = find_controller(route)
     swagger_fun = "swagger_path_#{action}" |> String.to_atom()
-    
+
     cond do
       Code.ensure_loaded?(controller) ->
         %{
@@ -178,20 +178,25 @@ defmodule Mix.Tasks.Phx.Swagger.Generate do
     endpoint_config = Application.get_env(app_name(), endpoint)
 
     case Keyword.get(endpoint_config, :url) do
-      nil -> swagger_map
+      nil ->
+        IO.puts "url undefined"
+        swagger_map
       _ -> collect_host_from_endpoint(swagger_map, endpoint_config)
     end
   end
 
   defp collect_host_from_endpoint(swagger_map, endpoint_config) do
+    IO.inspect endpoint_config
     url = Keyword.get(endpoint_config, :url)
     host = Keyword.get(url, :host, "localhost")
     port = Keyword.get(url, :port, 4000)
 
     swagger_map =
       if is_binary(host) and (is_integer(port) or is_binary(port)) do
+        IO.puts "Valid host and port: #{host}:#{port}"
         Map.put_new(swagger_map, :host, "#{host}:#{port}")
       else
+        IO.puts "Invalid host and port"
         swagger_map # host / port may be {:system, "ENV_VAR"} tuples
       end
 
